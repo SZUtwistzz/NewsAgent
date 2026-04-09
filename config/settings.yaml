@@ -20,9 +20,6 @@ rss_sources:
   - name: "BBC 中文"
     url: "https://rsshub.app/bbc/zhongwen/simp"
     category: politics
-  - name: "Solidot"
-    url: "https://www.solidot.org/index.rss"
-    category: tech
   - name: "华尔街日报 - 中文"
     url: "https://rsshub.app/wsj/zh-cn/zh-cn-world"
     category: business
@@ -32,9 +29,38 @@ rss_sources:
   - name: "Hacker News"
     url: "https://rsshub.app/hackernews/best"
     category: tech
-  - name: "36氪 - 快讯"
-    url: "https://rsshub.app/36kr/newsflashes"
-    category: tech
+  # ── 补充高质量源 ──
+  - name: "路透社中文"
+    url: "https://rsshub.app/reuters/cn/world"
+    category: politics
+  - name: "纽约时报中文"
+    url: "https://rsshub.app/nytimes/dual"
+    category: politics
+  - name: "澎湃新闻 - 热点"
+    url: "https://rsshub.app/thepaper/featured"
+    category: general
+  - name: "界面新闻"
+    url: "https://rsshub.app/jiemian/list/4"
+    category: general
+  - name: "环球时报 - 国际"
+    url: "https://rsshub.app/huanqiu/world"
+    category: politics
+
+# NewsAPI.org（需设置环境变量 NEWSAPI_KEY）
+newsapi:
+  enabled: true
+  categories: ["general", "technology", "business"]
+  countries: ["cn", "us"]
+  language: zh
+  page_size: 20
+
+# NewsData.io（需设置环境变量 NEWSDATA_KEY）
+newsdata:
+  enabled: true
+  categories: ["technology", "business", "politics", "world"]
+  countries: ["cn"]
+  language: zh
+  max_results: 10
 
 # 推送渠道配置
 push_channels:
@@ -48,7 +74,7 @@ push_channels:
 # Agent 配置
 agents:
   collector:
-    description: "新闻采集 Agent，负责从 RSS 和搜索引擎收集原始新闻"
+    description: "新闻采集 Agent，负责从 RSS、API 和搜索引擎收集原始新闻"
     max_rss_per_source: 15
     news_lookback_hours: 24
     max_search_queries: 3

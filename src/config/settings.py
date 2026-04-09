@@ -30,6 +30,24 @@ class PushPlusConfig(BaseModel):
     enabled: bool = False
 
 
+class NewsAPIConfig(BaseModel):
+    """NewsAPI.org 配置 — api_key 从环境变量 NEWSAPI_KEY 读取"""
+    enabled: bool = False
+    categories: list[str] = ["general", "technology", "business"]
+    countries: list[str] = ["cn", "us"]
+    language: str = "zh"
+    page_size: int = 20
+
+
+class NewsDataConfig(BaseModel):
+    """NewsData.io 配置 — api_key 从环境变量 NEWSDATA_KEY 读取"""
+    enabled: bool = False
+    categories: list[str] = ["science", "business", "politics"]
+    countries: list[str] = ["cn"]
+    language: str = "zh"
+    max_results: int = 20
+
+
 class PushChannelsConfig(BaseModel):
     wecom_webhook: WecomWebhookConfig = WecomWebhookConfig()
     pushplus: PushPlusConfig = PushPlusConfig()
@@ -72,6 +90,8 @@ class ObservabilityConfig(BaseModel):
 class Settings(BaseModel):
     llm: LLMConfig = LLMConfig()
     rss_sources: list[RSSSource] = []
+    newsapi: NewsAPIConfig = NewsAPIConfig()
+    newsdata: NewsDataConfig = NewsDataConfig()
     push_channels: PushChannelsConfig = PushChannelsConfig()
     agents: AgentsConfig = AgentsConfig()
     observability: ObservabilityConfig = ObservabilityConfig()

@@ -35,6 +35,15 @@ def main():
 
     logger.info("🚀 全球热点新闻 Agent 启动")
     logger.info(f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info(f"📋 RSS 源: {len(settings.rss_sources)} 个")
+
+    # 数据源状态
+    sources = ["RSS"]
+    if settings.newsapi.enabled and os.getenv("NEWSAPI_KEY"):
+        sources.append("NewsAPI")
+    if settings.newsdata.enabled and os.getenv("NEWSDATA_KEY"):
+        sources.append("NewsData.io")
+    logger.info(f"📡 数据源: {' + '.join(sources)}")
 
     # 4. 构建并运行 LangGraph
     graph = build_graph(settings)

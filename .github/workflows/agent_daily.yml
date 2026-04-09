@@ -29,4 +29,6 @@ jobs:
           WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
           PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
           LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
+          NEWSDATA_KEY: ${{ secrets.NEWSDATA_KEY }}
         run: python main.py
