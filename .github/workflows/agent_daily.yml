@@ -27,7 +27,5 @@ jobs:
         env:
           DEEPSEEK_KEY: ${{ secrets.DEEPSEEK_KEY }}
           PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
-          WECOM_CORP_ID: ${{ secrets.WECOM_CORP_ID }}
-          WECOM_SECRET: ${{ secrets.WECOM_SECRET }}
-          WECOM_AGENT_ID: ${{ secrets.WECOM_AGENT_ID }}
+          WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
         run: python agent.py
