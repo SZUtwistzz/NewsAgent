@@ -21,6 +21,9 @@ from openai import OpenAI
 # ──────────────────────────────────────────────
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_KEY", "")
 PUSH_TOKEN = os.getenv("PUSH_TOKEN", "")
+WECOM_CORP_ID = os.getenv("WECOM_CORP_ID", "")
+WECOM_SECRET = os.getenv("WECOM_SECRET", "")
+WECOM_AGENT_ID = os.getenv("WECOM_AGENT_ID", "")
 MODEL = "deepseek-chat"
 BASE_URL = "https://api.deepseek.com"
 
@@ -101,10 +104,59 @@ def search_duckduckgo(query: str) -> str:
 
 
 def push_to_wechat(content: str) -> str:
-    """通过 PushPlus 推送 Markdown 内容到微信"""
-    if not PUSH_TOKEN:
-        return "错误: PUSH_TOKEN 环境变量未设置，无法推送。"
+    """推送 Markdown 内容到微信（优先企业微信，回退 PushPlus）"""
+    results = []
 
+    # 优先使用企业微信推送
+    if WECOM_CORP_ID and WECOM_SECRET and WECOM_AGENT_ID:
+        results.append(_push_via_wecom(content))
+    elif PUSH_TOKEN:
+        results.append(_push_via_pushplus(content))
+    else:
+        return "错误: 未配置任何推送渠道（企业微信或 PushPlus）"
+
+    return "\n".join(results)
+
+
+def _push_via_wecom(content: str) -> str:
+    """通过企业微信应用推送"""
+    try:
+        # 1. 获取 access_token
+        token_url = (
+            f"https://qyapi.weixin.qq.com/cgi-bin/gettoken"
+            f"?corpid={WECOM_CORP_ID}&corpsecret={WECOM_SECRET}"
+        )
+        token_resp = requests.get(token_url, timeout=10).json()
+        if token_resp.get("errcode") != 0:
+            return f"❌ 企业微信获取 token 失败: {token_resp.get('errmsg')}"
+
+        access_token = token_resp["access_token"]
+
+        # 2. 发送消息
+        today = datetime.now().strftime("%Y-%m-%d")
+        send_url = (
+            f"https://qyapi.weixin.qq.com/cgi-bin/message/send"
+            f"?access_token={access_token}"
+        )
+        payload = {
+            "touser": "@all",
+            "msgtype": "markdown",
+            "agentid": int(WECOM_AGENT_ID),
+            "markdown": {
+                "content": f"# 📰 AI 早报 | {today}\n\n{content}"
+            },
+        }
+        resp = requests.post(send_url, json=payload, timeout=30).json()
+        if resp.get("errcode") == 0:
+            return f"✅ 企业微信推送成功！"
+        else:
+            return f"⚠️ 企业微信推送异常: {resp.get('errmsg')}"
+    except Exception as e:
+        return f"❌ 企业微信推送失败: {e}"
+
+
+def _push_via_pushplus(content: str) -> str:
+    """通过 PushPlus 推送（备用）"""
     today = datetime.now().strftime("%Y-%m-%d")
     payload = {
         "token": PUSH_TOKEN,
@@ -120,11 +172,11 @@ def push_to_wechat(content: str) -> str:
         )
         data = resp.json()
         if data.get("code") == 200:
-            return f"✅ 推送成功！PushPlus 返回: {data.get('msg', 'ok')}"
+            return f"✅ PushPlus 推送成功！"
         else:
-            return f"⚠️ 推送返回异常: {json.dumps(data, ensure_ascii=False)}"
+            return f"⚠️ PushPlus 推送异常: {json.dumps(data, ensure_ascii=False)}"
     except Exception as e:
-        return f"❌ 推送失败: {e}"
+        return f"❌ PushPlus 推送失败: {e}"
 
 
 # ──────────────────────────────────────────────
@@ -270,8 +322,17 @@ if __name__ == "__main__":
     if not DEEPSEEK_KEY:
         print("❌ 请设置环境变量 DEEPSEEK_KEY")
         exit(1)
-    if not PUSH_TOKEN:
-        print("⚠️ PUSH_TOKEN 未设置，推送功能将不可用")
+
+    has_wecom = WECOM_CORP_ID and WECOM_SECRET and WECOM_AGENT_ID
+    if not has_wecom and not PUSH_TOKEN:
+        print("⚠️ 企业微信和 PushPlus 均未配置，推送功能将不可用")
+    else:
+        channels = []
+        if has_wecom:
+            channels.append("企业微信")
+        if PUSH_TOKEN:
+            channels.append("PushPlus")
+        print(f"📢 推送渠道: {', '.join(channels)}")
 
     print("🚀 全球热点新闻 Agent 启动")
     print(f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
