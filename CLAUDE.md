@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A single-file AI news agent (`agent.py`) that uses DeepSeek's tool-calling API to autonomously fetch global news from RSS feeds, optionally search the web via DuckDuckGo, compose a humorous Chinese-language morning briefing, and push it to WeChat via PushPlus.
+An enterprise-grade multi-agent news aggregation system built with LangChain/LangGraph and DeepSeek API. The system uses three specialized agents (Collector, Editor, Publisher) orchestrated via LangGraph to fetch global news from RSS feeds, compose humorous daily briefings, and push to WeChat channels.
 
 ## Commands
 
@@ -13,30 +13,57 @@ A single-file AI news agent (`agent.py`) that uses DeepSeek's tool-calling API t
 pip install -r requirements.txt
 
 # Run the agent locally (requires env vars)
-DEEPSEEK_KEY="sk-xxx" PUSH_TOKEN="xxx" python agent.py
-```
+DEEPSEEK_KEY="sk-xxx" WECOM_WEBHOOK="https://..." python main.py
 
-No tests, linter, or build system — this is a single-script project.
+# Run with old single-file version (deprecated)
+DEEPSEEK_KEY="sk-xxx" WECOM_WEBHOOK="https://..." python agent.py
+```
 
 ## Architecture
 
-The entire agent lives in `agent.py` and follows an agentic tool-calling loop:
+**Multi-Agent Pipeline (LangGraph):**
+- `CollectorAgent` → fetches RSS feeds, optionally searches web via DuckDuckGo
+- `EditorAgent` → filters and composes humorous briefing with LLM
+- `PublisherAgent` → pushes to WeChat Work webhook and/or PushPlus
 
-1. An OpenAI-compatible client connects to DeepSeek (`BASE_URL = "https://api.deepseek.com"`, model `deepseek-chat`)
-2. The agent loop (`run_agent()`) sends messages with `TOOLS_SCHEMA` and iterates up to 10 rounds
-3. Each round: DeepSeek returns tool calls → `execute_tool()` dispatches to Python functions → results fed back as `tool` messages
-4. Three tools are registered in `TOOL_MAP`:
-   - `fetch_rss_feeds` — parses 8 RSS sources via `feedparser`, filters to last 24h
-   - `search_duckduckgo` — web search via `duckduckgo-search` library
-   - `push_to_wechat` — POST to PushPlus API for WeChat delivery
+**Key Components:**
+- `src/agents/graph.py` — LangGraph state machine definition
+- `src/agents/state.py` — shared state schema (AgentState TypedDict)
+- `src/tools/` — pluggable tool system (BaseTool abstract class)
+- `config/settings.yaml` — YAML config loaded via Pydantic models in `src/config/settings.py`
+- `src/observability.py` — structured logging + optional LangSmith tracing
 
-## Environment Variables
+**Tool Plugin System:**
+All tools inherit from `BaseTool` and implement `run(**kwargs) -> str`. Tools are registered and converted to LangChain StructuredTools in `src/tools/base.py`.
 
-- `DEEPSEEK_KEY` — DeepSeek API key (required, agent exits if missing)
-- `PUSH_TOKEN` — PushPlus token (optional locally, but push will fail without it)
+## Configuration
 
-In CI, these are read from GitHub Actions secrets in `.github/workflows/agent_daily.yml`.
+All runtime config lives in `config/settings.yaml`:
+- RSS sources list
+- LLM settings (model, temperature, etc.)
+- Agent parameters (max search queries, top N news, retry times)
+- Push channel toggles
+- Observability settings (log level, LangSmith project)
+
+Environment variables:
+- `DEEPSEEK_KEY` (required) — DeepSeek API key, also set as `OPENAI_API_KEY` for langchain_openai
+- `WECOM_WEBHOOK` (optional) — WeChat Work group bot webhook URL
+- `PUSH_TOKEN` (optional) — PushPlus token
+- `LANGCHAIN_API_KEY` (optional) — for LangSmith tracing
+- `NEWS_AGENT_CONFIG` (optional) — custom config file path
 
 ## Deployment
 
-GitHub Actions workflow (`.github/workflows/agent_daily.yml`) runs daily at UTC 00:00 (Beijing 08:00) and supports `workflow_dispatch` for manual triggers.
+GitHub Actions workflow at `.github/workflows/agent_daily.yml` runs daily at UTC 00:00 (Beijing 08:00) and supports `workflow_dispatch`. Requires repository secrets: `DEEPSEEK_KEY`, `WECOM_WEBHOOK`, optionally `PUSH_TOKEN` and `LANGCHAIN_API_KEY`.
+
+## Migration Notes
+
+The old single-file `agent.py` is deprecated. New entry point is `main.py`. Key differences:
+- Monolithic → modular structure
+- Hardcoded config → YAML + Pydantic
+- Single agent loop → LangGraph multi-agent pipeline
+- No observability → structured logs + LangSmith
+
+## Language
+
+Codebase uses English for code/comments, Chinese for prompts/logs/commit messages. Respond in Chinese when interacting with the user.

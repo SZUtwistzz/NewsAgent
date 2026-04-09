@@ -1,0 +1,71 @@
+# ──────────────────────────────────────────────
+# 全球热点新闻 Agent 配置文件
+# ──────────────────────────────────────────────
+
+llm:
+  provider: deepseek
+  model: deepseek-chat
+  base_url: https://api.deepseek.com
+  temperature: 0.7
+  max_tokens: 4096
+
+# RSS 新闻源
+rss_sources:
+  - name: "联合早报 - 国际"
+    url: "https://rsshub.app/zaobao/realtime/world"
+    category: politics
+  - name: "联合早报 - 中国"
+    url: "https://rsshub.app/zaobao/realtime/china"
+    category: politics
+  - name: "BBC 中文"
+    url: "https://rsshub.app/bbc/zhongwen/simp"
+    category: politics
+  - name: "Solidot"
+    url: "https://www.solidot.org/index.rss"
+    category: tech
+  - name: "华尔街日报 - 中文"
+    url: "https://rsshub.app/wsj/zh-cn/zh-cn-world"
+    category: business
+  - name: "FT 中文网"
+    url: "https://rsshub.app/ft/chinese/hotstoryby7day"
+    category: business
+  - name: "Hacker News"
+    url: "https://rsshub.app/hackernews/best"
+    category: tech
+  - name: "36氪 - 快讯"
+    url: "https://rsshub.app/36kr/newsflashes"
+    category: tech
+
+# 推送渠道配置
+push_channels:
+  wecom_webhook:
+    enabled: true
+    # URL 从环境变量 WECOM_WEBHOOK 读取
+  pushplus:
+    enabled: false
+    # Token 从环境变量 PUSH_TOKEN 读取
+
+# Agent 配置
+agents:
+  collector:
+    description: "新闻采集 Agent，负责从 RSS 和搜索引擎收集原始新闻"
+    max_rss_per_source: 15
+    news_lookback_hours: 24
+    max_search_queries: 3
+
+  editor:
+    description: "新闻编辑 Agent，负责筛选、排序、撰写幽默早报"
+    top_n_news: 10
+
+  publisher:
+    description: "推送 Agent，负责将早报推送到各渠道"
+    retry_times: 2
+    retry_delay_seconds: 5
+
+# 可观测性
+observability:
+  log_level: INFO
+  # LangSmith 追踪（需设置环境变量 LANGCHAIN_API_KEY）
+  langsmith:
+    enabled: false
+    project: "news-agent"
